@@ -1,0 +1,193 @@
+swagger: '2.0'
+info:
+  title: Trip Track API
+  description: Track your trips with Trip Track API
+  version: 1.0.0
+host: triptrack-api-dev.herokuapp.com
+schemes:
+  - http
+basePath: /
+produces:
+  - application/json
+paths:
+  /trip:
+    post:
+      summary: Provide trip information
+      description: |
+        Allows the client submits a collection of trip details. Each trip detail will consist of
+         - the kind of activity (START, UPDATE, STOP)
+         - the event date/time as recorded by the client
+         - lng/lat position
+         - velocity as detected by the client
+         - session is a client generated UUID unique to a trip created when a trip starts.
+         
+        This service requires authentication token.
+      parameters:
+        - name: trip
+          in: body
+          required: true
+          description: Trip information
+          schema:
+            $ref: '#/definitions/Trip'
+      tags:
+        - Trip
+      responses:
+        200:
+          description: The data has been recorded.
+          schema:
+            $ref: '#/definitions/Status'
+        default:
+          description: Non-successful response. The client should resend this at a later time.
+          schema:
+            $ref: '#/definitions/Status'
+    get:
+      summary: Get information about a trip. 
+      description: |
+        A trip has a start and, may have an end activity. The first item in the collection 
+        should always be the START activity, followed by a series of UPDATE activities.
+        
+        If a trip is ended, the last item in the collection will be an END activity.
+        A trip without an END activity is considered to be in-progress.
+        
+        This service requires authentication token.
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: Trip identifier
+          type: number
+      tags:
+        - Trip
+      responses:
+        200:
+          description: A collection of trip details for a given trip
+          schema:
+            type: array
+            items: 
+              $ref: '#/definitions/TripDetail'
+        default:
+          description: Non-successful response
+          schema:
+            $ref: '#/definitions/Status'
+            
+  /policy/{policyId}/trips:
+    get:
+      summary: List all trips for a given policy Id.
+      description: |
+        List all trips (not trip details) for a given policy Id
+      parameters:
+        - name: policyId
+          in: path
+          required: true
+          description: Policy required
+          type: string
+      tags:
+        - Trip
+      responses:
+        200:
+          description: A collection of trips
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/TripSummary'
+        default:
+          description: Non-successful responses
+          schema:
+            $ref: '#/definitions/Status'
+          
+  /register/mobile:
+    post:
+      summary: Register a customer mobile device
+      description: |
+        Enable a customer to register and use the mobile app.
+        Registration requires a mobile number as identification and a SMS passcode.
+        
+        Posing to the service without a passcode will cause the SMS to be sent.
+        
+        On successful registration, the service will return an authentication token. 
+      parameters:
+        - name: registration
+          in: body
+          required: true
+          description: Customer mobile device registration
+          schema:
+            $ref: '#/definitions/MobileAuthentication'
+      responses:
+        200:
+          description: Successfully registered
+          schema:
+            $ref: '#/definitions/MobileRegistration'
+            
+definitions:
+  Status:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+  Trip:
+    properties:
+      appId:
+        type: string
+      beacon:
+        $ref: '#/definitions/Beacon' 
+      details:
+        type: array
+        items:
+          $ref: '#/definitions/TripDetail'
+  TripDetail:
+    properties:
+      session:
+        type: string
+      activity:
+        type: string
+      eventdatetime: 
+        type: string
+      lng:
+        type: number
+      lat:
+        type: number
+      velocity:
+        type: number
+  TripSummary:
+    properties:
+      tripId:
+        type: number
+      startdatetime:
+        type: string
+      startLng:
+        type: number
+      startLat:
+        type: number
+      enddatetime:
+        type: string
+      endLng:
+        type: number
+      endLat:
+        type: number
+      duration:
+        type: number
+      distance:
+        type: number
+      cost:
+        type: number
+      savings:
+        type: number
+  Beacon:
+    properties:
+      uuid:
+        type: string
+      major:
+        type: string
+      minor:
+        type: string
+  MobileAuthentication:
+    properties:
+      mobileNumber: 
+        type: string
+      passcode: 
+        type: string
+  MobileRegistration:
+    properties:
+      authenticationToken: 
+        type: string
