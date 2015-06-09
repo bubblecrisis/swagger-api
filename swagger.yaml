@@ -10,6 +10,9 @@ basePath: /
 produces:
   - application/json
 paths:
+#-------------------------------------------------------------------------------
+# API Definitions
+#-------------------------------------------------------------------------------
   /trip:
     post:
       summary: Provide trip information
@@ -34,12 +37,12 @@ paths:
       responses:
         200:
           description: The data has been recorded.
-          schema:
-            $ref: '#/definitions/Status'
-        default:
-          description: Non-successful response. The client should resend this at a later time.
-          schema:
-            $ref: '#/definitions/Status'
+        400:
+          description: Invalid input.
+        401:
+          description: Unauthorised. Authorization token is invalid.
+        500:
+          description: Server error. The client should resend this at a later time.
     get:
       summary: Get information about a trip. 
       description: |
@@ -65,16 +68,58 @@ paths:
             type: array
             items: 
               $ref: '#/definitions/TripDetail'
+        401:
+          description: Unauthorised. Authorization token is invalid.
+        404:
+          description: Trip not found.
         default:
           description: Non-successful response
+#-------------------------------------------------------------------------------       
+  /registration/mobile:
+    post:
+      summary: Register a customer mobile device
+      description: |
+        Enable a customer to register and use the mobile app.
+        Registration requires a mobile number as identification and a SMS passcode.
+        
+        Posting to the service without a passcode will cause the SMS to be sent.
+        
+        {
+          "identifier": "0412123456"
+        }
+        
+        Posting to the service with a valid passcode to complete the registration.
+        On successful registration, the service will return an authentication token.
+
+        {
+          "identifier": "0412123456",
+          "passcode": "123456"
+        }        
+        
+      parameters:
+        - name: registration
+          in: body
+          required: true
+          description: Customer mobile device registration
           schema:
-            $ref: '#/definitions/Status'
-            
+            $ref: '#/definitions/MobileAuthentication'
+      responses:
+        200:
+          description: Successfully registered
+          schema:
+            $ref: '#/definitions/MobileRegistration'
+        210:
+          description: SMS passcode sent.
+        400:
+          description: Invalid input.
+#-------------------------------------------------------------------------------           
   /policy/{policyId}/trips:
     get:
       summary: List all trips for a given policy Id.
       description: |
-        List all trips (not trip details) for a given policy Id
+        List all trips (not trip details) for a given policy Id.
+        
+        This service requires authentication token.
       parameters:
         - name: policyId
           in: path
@@ -90,41 +135,64 @@ paths:
             type: array
             items:
               $ref: '#/definitions/TripSummary'
+        404:
+          description: Policy Id not found.
         default:
           description: Non-successful responses
-          schema:
-            $ref: '#/definitions/Status'
-          
-  /register/mobile:
-    post:
-      summary: Register a customer mobile device
+#-------------------------------------------------------------------------------       
+  /policy/{policyId}/beacon:
+    put:
+      summary: Register a beacon to a policy
       description: |
-        Enable a customer to register and use the mobile app.
-        Registration requires a mobile number as identification and a SMS passcode.
-        
-        Posing to the service without a passcode will cause the SMS to be sent.
-        
-        On successful registration, the service will return an authentication token. 
+        A policy is associated with a beacon. A beacon identifies a vehicle.
+        This is an authenticated service.
       parameters:
-        - name: registration
+        - name: policyId
+          in: path
+          required: true
+          description: Policy Id
+          type: string
+        - name: beacon
           in: body
           required: true
-          description: Customer mobile device registration
+          description: Beacon information
           schema:
-            $ref: '#/definitions/MobileAuthentication'
+            $ref: '#/definitions/Beacon'
       responses:
         200:
           description: Successfully registered
-          schema:
-            $ref: '#/definitions/MobileRegistration'
-            
+        400:
+          description: Invalid input.
+        404:
+          description: Policy id not found.
+        409:
+          description: This beacon has already been associated to another policy.
+    delete:
+      summary: De-register a beacon from a policy
+      description: |
+        A policy is associated with a beacon. A beacon identifies a vehicle.
+        This is an authenticated service.
+      parameters:
+        - name: policyId
+          in: path
+          required: true
+          description: Policy Id
+          type: string
+      responses:
+        200:
+          description: Successfully de-registered.
+        404:
+          description: Policy id not found.
+#-------------------------------------------------------------------------------
+# Models
+#-------------------------------------------------------------------------------
 definitions:
-  Status:
-    properties:
-      code:
-        type: string
-      message:
-        type: string
+#  Status:
+#    properties:
+#      code:
+#        type: string
+#      message:
+#        type: string
   Trip:
     properties:
       appId:
@@ -183,7 +251,7 @@ definitions:
         type: string
   MobileAuthentication:
     properties:
-      mobileNumber: 
+      identifier: 
         type: string
       passcode: 
         type: string
