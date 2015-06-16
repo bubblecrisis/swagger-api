@@ -223,6 +223,8 @@ paths:
           required: true
           description: Policy Id
           type: string
+      tags:
+        - Policy
       responses:
         200:
           description: Successfully de-registered.
