@@ -10,8 +10,12 @@ basePath: /
 produces:
   - application/json
 paths:
-#-------------------------------------------------------------------------------
+#===============================================================================
 # API Definitions
+#===============================================================================
+
+#-------------------------------------------------------------------------------
+# TRIP
 #-------------------------------------------------------------------------------
   /trip:
     post:
@@ -22,7 +26,7 @@ paths:
          - the event date/time as recorded by the client
          - lng/lat position
          - velocity as detected by the client
-         - session is a client generated UUID unique to a trip created when a trip starts.
+         - session is a client generated UUID unique to a trip created when a trip starts. It should be renewed each time a new trip is started.
          
         This service requires authentication token.
       parameters:
@@ -43,6 +47,7 @@ paths:
           description: Unauthorised. Authorization token is invalid.
         500:
           description: Server error. The client should resend this at a later time.
+  /trip/{id}:  
     get:
       summary: Get information about a trip. 
       description: |
@@ -55,7 +60,7 @@ paths:
         This service requires authentication token.
       parameters:
         - name: id
-          in: query
+          in: path
           required: true
           description: Trip identifier
           type: number
@@ -89,13 +94,15 @@ paths:
         }
         
         Posting to the service with a valid passcode to complete the registration.
-        On successful registration, the service will return an authentication token.
 
         {
           "identifier": "0412123456",
           "passcode": "123456"
         }        
-        
+
+        On successful registration, the service will return an authentication token
+        and the customerId.
+
       parameters:
         - name: registration
           in: body
@@ -103,6 +110,8 @@ paths:
           description: Customer mobile device registration
           schema:
             $ref: '#/definitions/MobileAuthentication'
+      tags:
+        - Registration
       responses:
         200:
           description: Successfully registered
@@ -112,12 +121,43 @@ paths:
           description: SMS passcode sent.
         400:
           description: Invalid input.
+#-------------------------------------------------------------------------------
+# CUSTOMER
+#-------------------------------------------------------------------------------           
+  /customer/{customerId}/policy:
+    get:
+      summary: List all policies for a given customer
+      description: |
+        A customer can have multiple policies. One policy for each insurance.
+        
+        This service requires authentication token.
+      parameters:
+        - name: customerId
+          in: path
+          required: true
+          type: string
+      tags:
+        - Policy
+        - Customer
+      responses:
+        200:
+          description: A collection of policies
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Policy'
+        404:
+          description: Customer Id not found.
+        default:
+          description: Non-successful responses
 #-------------------------------------------------------------------------------           
   /policy/{policyId}/trips:
     get:
-      summary: List all trips for a given policy Id.
+      summary: List all trips for a given policy Id
       description: |
         List all trips (not trip details) for a given policy Id.
+        This is the same as listing trips for a given vehicle.
+        We cannot determine who (primary or secondary) drives the car.
         
         This service requires authentication token.
       parameters:
@@ -127,6 +167,7 @@ paths:
           description: Policy required
           type: string
       tags:
+        - Policy
         - Trip
       responses:
         200:
@@ -139,6 +180,8 @@ paths:
           description: Policy Id not found.
         default:
           description: Non-successful responses
+#-------------------------------------------------------------------------------
+# POLICY
 #-------------------------------------------------------------------------------       
   /policy/{policyId}/beacon:
     put:
@@ -158,6 +201,8 @@ paths:
           description: Beacon information
           schema:
             $ref: '#/definitions/Beacon'
+      tags:
+        - Policy
       responses:
         200:
           description: Successfully registered
@@ -184,8 +229,50 @@ paths:
         404:
           description: Policy id not found.
 #-------------------------------------------------------------------------------
+  /policy/{policyId}/{scheduleId}/bill:
+    get:
+      summary: Bill summary for a policy for a specific schedule period
+      description: |
+        The billing period is from the start of the schedule to today. If
+        a date parameter is specified, it is billed up to that date.
+        
+        Only includes bill that have been procesed. For example, it will
+        not calculate bill in real time as the trip is in progress. Processing
+        may be nightly.
+        
+        This is an authenticated service.
+      parameters:
+        - name: policyId
+          in: path
+          required: true
+          description: Policy Id
+          type: string
+        - name: scheduleId
+          in: path
+          required: true
+          description: A schedule defines a specific period for a policy
+          type: string
+        - name: date
+          in: query
+          required: false
+          description: Bill up to this date. Format is YYYYMMDD. Default is today. 
+          type: string
+      tags:
+        - Policy
+        - Billing
+      responses:
+        200:
+          description: Successful
+          schema:
+            $ref: '#/definitions/BillSummary'
+        400:
+          description: Invalid input.
+        404:
+          description: Policyid or scheduleId not found.
+
+#===============================================================================
 # Models
-#-------------------------------------------------------------------------------
+#===============================================================================
 definitions:
 #  Status:
 #    properties:
@@ -241,6 +328,31 @@ definitions:
         type: number
       savings:
         type: number
+  Policy:
+    properties:
+      policyId:
+        type: string
+      type:
+        type: string
+      licence:
+        type: string
+      make:
+        type: string
+      model:
+        type: string
+  BillSummary:
+    properties:
+      fromDate:
+        type: string
+      toDate:
+        type: string
+      amount:
+        type: string
+      tripDuration:
+        type: number
+        description: In approximate hours
+      dayPassPurchased:
+        type: number
   Beacon:
     properties:
       uuid:
@@ -257,5 +369,12 @@ definitions:
         type: string
   MobileRegistration:
     properties:
+      customerId:
+        type: string
+        description: The client should store this in the local storage.
       authenticationToken: 
         type: string
+        description: |
+          The client should store this in the local storage securely.
+          The client should provide this in the 'Authorization' header 
+          for all authenticated calls.
