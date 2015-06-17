@@ -3,7 +3,7 @@ info:
   title: Trip Track API
   description: Track your trips with Trip Track API
   version: 1.0.0
-host: triptrack-api-dev.herokuapp.com
+host: triptrack-stub.herokuapp.com
 schemes:
   - http
 basePath: /
