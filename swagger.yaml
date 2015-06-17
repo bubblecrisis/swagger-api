@@ -17,7 +17,7 @@ paths:
 #-------------------------------------------------------------------------------
 # TRIP
 #-------------------------------------------------------------------------------
-  /trip:
+  /v1/trip:
     post:
       summary: Provide trip information
       description: |
@@ -47,7 +47,7 @@ paths:
           description: Unauthorised. Authorization token is invalid.
         500:
           description: Server error. The client should resend this at a later time.
-  /trip/{id}:  
+  /v1/trip/{id}:  
     get:
       summary: Get information about a trip. 
       description: |
@@ -80,7 +80,7 @@ paths:
         default:
           description: Non-successful response
 #-------------------------------------------------------------------------------       
-  /registration/mobile:
+  /v1/registration/mobile:
     post:
       summary: Register a customer mobile device
       description: |
@@ -124,7 +124,7 @@ paths:
 #-------------------------------------------------------------------------------
 # CUSTOMER
 #-------------------------------------------------------------------------------           
-  /customer/{customerId}/policy:
+  /v1/customer/{customerId}/policy:
     get:
       summary: List all policies for a given customer
       description: |
@@ -151,7 +151,7 @@ paths:
         default:
           description: Non-successful responses
 #-------------------------------------------------------------------------------           
-  /policy/{policyId}/trips:
+  /v1/policy/{policyId}/trips:
     get:
       summary: List all trips for a given policy Id
       description: |
@@ -183,7 +183,7 @@ paths:
 #-------------------------------------------------------------------------------
 # POLICY
 #-------------------------------------------------------------------------------       
-  /policy/{policyId}/beacon:
+  /v1/policy/{policyId}/beacon:
     put:
       summary: Register a beacon to a policy
       description: |
@@ -231,7 +231,7 @@ paths:
         404:
           description: Policy id not found.
 #-------------------------------------------------------------------------------
-  /policy/{policyId}/{scheduleId}/bill:
+  /v1/policy/{policyId}/{scheduleId}/bill:
     get:
       summary: Bill summary for a policy for a specific schedule period
       description: |
