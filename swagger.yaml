@@ -342,6 +342,10 @@ definitions:
         type: string
       model:
         type: string
+      startDate:
+        type: string
+      endDate:
+        type: string
   BillSummary:
     properties:
       fromDate:
@@ -360,9 +364,9 @@ definitions:
       uuid:
         type: string
       major:
-        type: string
+        type: number
       minor:
-        type: string
+        type: number
   MobileAuthentication:
     properties:
       identifier: 
