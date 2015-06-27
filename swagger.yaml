@@ -2,7 +2,7 @@ swagger: '2.0'
 info:
   title: Trip Track API
   description: Track your trips with Trip Track API
-  version: 1.0.0
+  version: 1.0.1
 host: triptrack-stub.herokuapp.com
 schemes:
   - http
