@@ -1,0 +1,560 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "description" : "FRTI Customer API",
+    "version" : "V0.1",
+    "title" : "API for customer interaction"
+  },
+  "tags" : [ {
+    "name" : "Policy"
+  }, {
+    "name" : "Trip"
+  }, {
+    "name" : "Customer"
+  }, {
+    "name" : "Registration"
+  } ],
+  "schemes" : [ "http", "https" ],
+  "consumes" : [ "application/json" ],
+  "produces" : [ "application/json" ],
+  "paths" : {
+    "/v1/customer" : {
+      "get" : {
+        "tags" : [ "Customer" ],
+        "summary" : "Get the customer's profile and policies",
+        "description" : "Returns the authenticated customer's profile and policies.",
+        "operationId" : "getCustomerProfile",
+        "produces" : [ "application/json" ],
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "* 0 - Success",
+            "schema" : {
+              "$ref" : "#/definitions/Customer"
+            }
+          },
+          "404" : {
+            "description" : "* 10 - Unknown customer Id. Since this is the authenticated customer, it would be unlikely to get this.",
+            "schema" : {
+              "$ref" : "#/definitions/ApiStatus"
+            }
+          }
+        }
+      }
+    },
+    "/v1/policy/{policyId}/beacon" : {
+      "put" : {
+        "tags" : [ "Policy" ],
+        "summary" : "Register a beacon",
+        "description" : "Register or replace a beacon for a policy. The customer must own the policy.",
+        "operationId" : "registerBeacon",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "policyId",
+          "in" : "path",
+          "required" : true,
+          "type" : "integer",
+          "format" : "int64"
+        }, {
+          "in" : "body",
+          "name" : "body",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/definitions/Beacon"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "* 0 - Success",
+            "schema" : {
+              "$ref" : "#/definitions/AuthenticationToken"
+            }
+          },
+          "400" : {
+            "description" : "* 11 - Not authorised to register to this policy",
+            "schema" : {
+              "$ref" : "#/definitions/ApiStatus"
+            }
+          },
+          "404" : {
+            "description" : "* 10 - Policy not found",
+            "schema" : {
+              "$ref" : "#/definitions/ApiStatus"
+            }
+          }
+        }
+      }
+    },
+    "/v1/registration/app/complete" : {
+      "post" : {
+        "tags" : [ "Registration" ],
+        "summary" : "Complete an app registration",
+        "description" : "Continue from ```/app/start```. After receiving a SMS passcode, call this to complete the registration. \n\nThis is an **unauthenticated** API. The caller **must not** present any ```Authorization``` header.\n\nIf the registration is successful, the server will return a ```customerId``` and ```token``` for future authenticated calls.",
+        "operationId" : "complete",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "in" : "body",
+          "name" : "body",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/definitions/AuthenticationRequest"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "* 0 - Success",
+            "schema" : {
+              "$ref" : "#/definitions/AuthenticationToken"
+            }
+          },
+          "400" : {
+            "description" : "* 100 - Invalid passcode",
+            "schema" : {
+              "$ref" : "#/definitions/ApiStatus"
+            }
+          },
+          "404" : {
+            "description" : "* 10 - Invalid registration token",
+            "schema" : {
+              "$ref" : "#/definitions/ApiStatus"
+            }
+          },
+          "409" : {
+            "description" : "* 103 - Conflict. Already registered",
+            "schema" : {
+              "$ref" : "#/definitions/ApiStatus"
+            }
+          }
+        }
+      }
+    },
+    "/v1/registration/app/start" : {
+      "post" : {
+        "tags" : [ "Registration" ],
+        "summary" : "Start an app registration",
+        "description" : "Start an app registration. The```mobileNumber``` must be known by the server. The server will send an SMS passcode to that mobile number. \n\nThis is an **unauthenticated** API. The caller **must not** present any ```Authorization``` header.\n\nIf this step is successful, the server will return a ```token``` for the next ```/app/complete``` call.",
+        "operationId" : "start",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "in" : "body",
+          "name" : "body",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/definitions/RegistrationRequest"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "* 0 - Success",
+            "schema" : {
+              "$ref" : "#/definitions/AuthenticationToken"
+            }
+          },
+          "500" : {
+            "description" : "* 99 - System Error",
+            "schema" : {
+              "$ref" : "#/definitions/ApiStatus"
+            }
+          },
+          "404" : {
+            "description" : "* 10 - Unknown mobile number",
+            "schema" : {
+              "$ref" : "#/definitions/ApiStatus"
+            }
+          }
+        }
+      }
+    },
+    "/v1/registration/app/{id}" : {
+      "delete" : {
+        "tags" : [ "Registration" ],
+        "summary" : "De-register an app",
+        "description" : "Remove an app registration. The authorization token will be invalid. The authenticated caller must own the registration token.",
+        "operationId" : "deregister",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "description" : "Access token",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "* 0 - Success",
+            "schema" : {
+              "$ref" : "#/definitions/ApiStatus"
+            }
+          },
+          "400" : {
+            "description" : "* 11 - Unauthorized. Incorrect userid or token",
+            "schema" : {
+              "$ref" : "#/definitions/ApiStatus"
+            }
+          },
+          "404" : {
+            "description" : "* 10 - Unknown registration",
+            "schema" : {
+              "$ref" : "#/definitions/ApiStatus"
+            }
+          }
+        }
+      }
+    },
+    "/v1/trip/policy/{id}" : {
+      "get" : {
+        "tags" : [ "Trip" ],
+        "summary" : "List trips for a policy",
+        "description" : "List trips summary for a policy. A trip encapsulates a ```START``` and ```STOP``` activity.",
+        "operationId" : "queryTripByPolicy",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "description" : "policy Id",
+          "required" : true,
+          "type" : "integer",
+          "format" : "int64"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "* 0 - Success",
+            "schema" : {
+              "type" : "array",
+              "items" : {
+                "$ref" : "#/definitions/Trip"
+              }
+            }
+          },
+          "400" : {
+            "description" : "* 102 - Invalid policy or schedule setup",
+            "schema" : {
+              "$ref" : "#/definitions/ApiStatus"
+            }
+          },
+          "404" : {
+            "description" : "* 10 - No trip data found",
+            "schema" : {
+              "$ref" : "#/definitions/ApiStatus"
+            }
+          }
+        }
+      }
+    },
+    "/v1/trip/{id}" : {
+      "get" : {
+        "tags" : [ "Trip" ],
+        "summary" : "View a specific trip journey",
+        "description" : "List a specific trip journey. The journey will start with a ```START``` and end with a stop ```STOP``` activity, with all the ```MOVE``` activities in between",
+        "operationId" : "queryTrip",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "description" : "Trip identifier",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "* 0 - Success",
+            "schema" : {
+              "type" : "array",
+              "items" : {
+                "$ref" : "#/definitions/TripDetail"
+              }
+            }
+          },
+          "400" : {
+            "description" : "* 11 - Not authorised. It could be an invalid policy.",
+            "schema" : {
+              "$ref" : "#/definitions/ApiStatus"
+            }
+          },
+          "404" : {
+            "description" : "* 10 - No trips data found",
+            "schema" : {
+              "$ref" : "#/definitions/ApiStatus"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions" : {
+    "TripDetail" : {
+      "type" : "object",
+      "properties" : {
+        "id" : {
+          "type" : "integer",
+          "format" : "int64"
+        },
+        "createDate" : {
+          "type" : "string",
+          "format" : "date-time"
+        },
+        "recordDate" : {
+          "type" : "string",
+          "format" : "date-time"
+        },
+        "location" : {
+          "$ref" : "#/definitions/PGpoint"
+        },
+        "tripUUID" : {
+          "type" : "string"
+        },
+        "activity" : {
+          "type" : "string",
+          "enum" : [ "START", "MOVE", "STOP" ]
+        }
+      }
+    },
+    "Policy" : {
+      "type" : "object",
+      "properties" : {
+        "createdAt" : {
+          "type" : "string",
+          "format" : "date-time"
+        },
+        "lastModifiedAt" : {
+          "type" : "string",
+          "format" : "date-time"
+        },
+        "createdBy" : {
+          "type" : "string"
+        },
+        "lastModifiedBy" : {
+          "type" : "string"
+        },
+        "id" : {
+          "type" : "integer",
+          "format" : "int64"
+        },
+        "referenceId" : {
+          "type" : "string"
+        },
+        "status" : {
+          "type" : "string",
+          "enum" : [ "ACTIVE", "INACTIVE" ]
+        },
+        "startDate" : {
+          "type" : "string",
+          "format" : "date-time"
+        },
+        "closeDate" : {
+          "type" : "string",
+          "format" : "date-time"
+        },
+        "organisationId" : {
+          "type" : "integer",
+          "format" : "int64"
+        },
+        "owner" : {
+          "type" : "integer",
+          "format" : "int64"
+        },
+        "registration" : {
+          "type" : "string"
+        },
+        "vehicleMake" : {
+          "type" : "string"
+        },
+        "vehicleModel" : {
+          "type" : "string"
+        },
+        "vehicleYear" : {
+          "type" : "integer",
+          "format" : "int32"
+        },
+        "beaconUuid" : {
+          "type" : "string"
+        },
+        "beaconMajor" : {
+          "type" : "string"
+        },
+        "beaconMinor" : {
+          "type" : "string"
+        }
+      }
+    },
+    "PGpoint" : {
+      "type" : "object",
+      "properties" : {
+        "type" : {
+          "type" : "string"
+        },
+        "value" : {
+          "type" : "string"
+        },
+        "x" : {
+          "type" : "number",
+          "format" : "double"
+        },
+        "y" : {
+          "type" : "number",
+          "format" : "double"
+        }
+      }
+    },
+    "Trip" : {
+      "type" : "object",
+      "properties" : {
+        "uuid" : {
+          "type" : "string"
+        },
+        "startDate" : {
+          "type" : "string",
+          "format" : "date-time"
+        },
+        "endDate" : {
+          "type" : "string",
+          "format" : "date-time"
+        },
+        "scheduleId" : {
+          "type" : "integer",
+          "format" : "int64"
+        },
+        "policyId" : {
+          "type" : "integer",
+          "format" : "int64"
+        },
+        "beaconId" : {
+          "type" : "string"
+        },
+        "major" : {
+          "type" : "string"
+        },
+        "minor" : {
+          "type" : "string"
+        },
+        "billrunId" : {
+          "type" : "integer",
+          "format" : "int32"
+        }
+      }
+    },
+    "AuthenticationToken" : {
+      "type" : "object",
+      "properties" : {
+        "customerId" : {
+          "type" : "integer",
+          "format" : "int64"
+        },
+        "token" : {
+          "type" : "string"
+        }
+      }
+    },
+    "Customer" : {
+      "type" : "object",
+      "properties" : {
+        "createdAt" : {
+          "type" : "string",
+          "format" : "date-time"
+        },
+        "lastModifiedAt" : {
+          "type" : "string",
+          "format" : "date-time"
+        },
+        "createdBy" : {
+          "type" : "string"
+        },
+        "lastModifiedBy" : {
+          "type" : "string"
+        },
+        "id" : {
+          "type" : "integer",
+          "format" : "int64"
+        },
+        "status" : {
+          "type" : "string",
+          "enum" : [ "REGISTERED", "ACTIVE", "BLOCKED" ]
+        },
+        "firstName" : {
+          "type" : "string"
+        },
+        "lastName" : {
+          "type" : "string"
+        },
+        "email" : {
+          "type" : "string"
+        },
+        "externalReference" : {
+          "type" : "string"
+        },
+        "mobileNumber" : {
+          "type" : "string"
+        },
+        "policies" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/Policy"
+          }
+        }
+      }
+    },
+    "ApiStatus" : {
+      "type" : "object",
+      "properties" : {
+        "httpStatus" : {
+          "type" : "integer",
+          "format" : "int32"
+        },
+        "code" : {
+          "type" : "integer",
+          "format" : "int32"
+        },
+        "message" : {
+          "type" : "string"
+        }
+      }
+    },
+    "Beacon" : {
+      "type" : "object",
+      "properties" : {
+        "uuid" : {
+          "type" : "string"
+        },
+        "major" : {
+          "type" : "string"
+        },
+        "minor" : {
+          "type" : "string"
+        }
+      }
+    },
+    "AuthenticationRequest" : {
+      "type" : "object",
+      "properties" : {
+        "token" : {
+          "type" : "string"
+        },
+        "passcode" : {
+          "type" : "string"
+        }
+      }
+    },
+    "RegistrationRequest" : {
+      "type" : "object",
+      "required" : [ "mobileNumber" ],
+      "properties" : {
+        "mobileNumber" : {
+          "type" : "string"
+        },
+        "model" : {
+          "type" : "string"
+        },
+        "os" : {
+          "type" : "string"
+        },
+        "version" : {
+          "type" : "string"
+        }
+      }
+    }
+  },
+  "externalDocs" : {
+    "description" : "FRTI",
+    "url" : "http://frti.com.au"
+  }
+}

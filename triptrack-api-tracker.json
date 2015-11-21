@@ -1,0 +1,125 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "description" : "FRTI Tracker API",
+    "version" : "V0.1",
+    "title" : "API for customer interaction"
+  },
+  "tags" : [ {
+    "name" : "Trip"
+  } ],
+  "schemes" : [ "http", "https" ],
+  "consumes" : [ "application/json" ],
+  "produces" : [ "application/json" ],
+  "paths" : {
+    "/v1/trip" : {
+      "post" : {
+        "tags" : [ "Trip" ],
+        "summary" : "Track a client's trip location",
+        "description" : "Submit a list of the client's **tripLogs** geo-locations. A trip ```activity``` could be:\n\n* START\n* MOVE\n* STOP\n\nThe very first ```activity``` should be a ```START```. After that it can be followed by a number of ```MOVE``` or a ```STOP```. Once the trip is stopped, the next activity should be a ```START``` again. The ```START```, ```MOVE```, and ```STOP``` sequence may span across multiple API requests. It is acceptable to have multiple ```START```, ```STOP``` and ```START``` activities in the same request.\n\nShould this service fails due to technical reasons (non-400), the client should retry later with any unsubmitted data\n\nThis is an authenticated service. The supplied beacon information is used to identify the policy for the customer, and the login customer must be a driver of the policy.",
+        "operationId" : "logTrip",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "in" : "body",
+          "name" : "body",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/definitions/TripLogEntry"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "* 0 - Success",
+            "schema" : {
+              "$ref" : "#/definitions/ApiStatus"
+            }
+          },
+          "400" : {
+            "description" : "* 201 - There is more than one active schedule. Invalid policy setup\n* 11  - Not authorised. It could be an invalid beacon\n* 202 - Beacon in policy does not match\n",
+            "schema" : {
+              "$ref" : "#/definitions/ApiStatus"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions" : {
+    "TripLog" : {
+      "type" : "object",
+      "properties" : {
+        "session" : {
+          "type" : "string"
+        },
+        "activity" : {
+          "type" : "string",
+          "enum" : [ "START", "MOVE", "STOP" ]
+        },
+        "recordDate" : {
+          "type" : "string",
+          "format" : "date-time"
+        },
+        "lng" : {
+          "type" : "number",
+          "format" : "double"
+        },
+        "lat" : {
+          "type" : "number",
+          "format" : "double"
+        },
+        "velocity" : {
+          "type" : "number",
+          "format" : "double"
+        }
+      }
+    },
+    "TripLogEntry" : {
+      "type" : "object",
+      "properties" : {
+        "beacon" : {
+          "$ref" : "#/definitions/Beacon"
+        },
+        "tripLogs" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/TripLog"
+          }
+        }
+      }
+    },
+    "ApiStatus" : {
+      "type" : "object",
+      "properties" : {
+        "httpStatus" : {
+          "type" : "integer",
+          "format" : "int32"
+        },
+        "code" : {
+          "type" : "integer",
+          "format" : "int32"
+        },
+        "message" : {
+          "type" : "string"
+        }
+      }
+    },
+    "Beacon" : {
+      "type" : "object",
+      "properties" : {
+        "uuid" : {
+          "type" : "string"
+        },
+        "major" : {
+          "type" : "string"
+        },
+        "minor" : {
+          "type" : "string"
+        }
+      }
+    }
+  },
+  "externalDocs" : {
+    "description" : "FRTI",
+    "url" : "http://frti.com.au"
+  }
+}
